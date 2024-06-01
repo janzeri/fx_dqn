@@ -77,7 +77,7 @@ class FXEnv:
 
 
     def step(self, action):
-        if action > 2:
+        if action > 4:
             raise Exception(str(action) + " is invalid.")
 
         current_price = self.price_data[self.price_data_idx]
@@ -85,15 +85,21 @@ class FXEnv:
         next_state = None
         reward = None
 
-        if action == 0: # BUY
-            reward = self.portfolio.buy(current_price, self.SPREAD)
+        if action == 0: # NO_POSITION
+            reward = self.portfolio.no_position(current_price, self.SPREAD)
+            print("NOT ", end=' ')
+        elif action == 1: # BUY
+            reward = self.portfolio.buy(self.price_data[self.price_data_idx + 1], self.SPREAD)
             print("BUY ", end=' ')
-        elif action == 1: # HOLD
-            reward = self.portfolio.hold(self.price_data[self.price_data_idx + 1], self.SPREAD)
+        elif action == 2: # HOLD_LONG
+            reward = self.portfolio.hold_long(current_price, self.SPREAD)
             print("HOLD ", end=' ')
-        elif action == 2: # SELL
+        elif action == 3: # SELL
             reward = self.portfolio.sell(current_price, self.SPREAD)
             print("SELL ", end=' ')
+        elif action == 4: # HOLD_SHORT
+            reward = self.portfolio.hold_short(current_price, self.SPREAD)
+            print("HOLD ", end=' ')
         else:
             raise Exception("action is changed in step. something wrong.")
         
@@ -133,9 +139,11 @@ class FXEnv:
 
 class Portfolio:
     def __init__(self, currency_pair):
-        self.LONG = 0
-        self.NOT = 1
-        self.SHORT = 2
+        self.NOT = 0
+        self.LONG = 1
+        self.HOLD_LONG = 2
+        self.SHORT = 3
+        self.HOLD_SHORT = 4
         
         self.CURRENCY_PAIR = currency_pair
         self.__money = 1000000
@@ -172,6 +180,13 @@ class Portfolio:
             return pips
         else:
             return price
+        
+    def no_position(self, next_price, spread):
+        if self.position_status == self.NOT:
+            self.pips_history.append(self.pips)
+            return 0
+        else:
+            raise Exception("ERROR : wrong position_status")
 
     def buy(self, price, spread):
         pips_rewards = 0
@@ -192,11 +207,8 @@ class Portfolio:
         self.pips_history.append(self.pips)
         return pips_rewards
 
-    def hold(self, next_price, spread):
-        if self.position_status == self.NOT:
-            self.pips_history.append(self.pips)
-            return 0
-        elif self.position_status == self.LONG or self.position_status == self.SHORT:
+    def hold_long(self, next_price, spread):
+        if self.position_status == self.LONG:
             self.pips_history.append(self.pips) #ここでは損益は増減しない
             expect_pips = next_price - self.__position_price - spread
             expect_pips = self.calculate_pips(expect_pips)
@@ -223,7 +235,14 @@ class Portfolio:
         self.pips_history.append(self.pips)
         return pips_rewards
 
-
+    def hold_short(self, next_price, spread):
+        if self.position_status == self.SHORT:
+            self.pips_history.append(self.pips) #ここでは損益は増減しない
+            expect_pips = next_price - self.__position_price - spread
+            expect_pips = self.calculate_pips(expect_pips)
+            return expect_pips
+        else:
+            raise Exception("ERROR : wrong position_status")
 
 
 

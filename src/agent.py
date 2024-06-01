@@ -61,7 +61,7 @@ class QNetwork:
             nn.ReLU(),
             nn.Linear(256, 32),
             nn.ReLU(),
-            nn.Linear(32, 3),
+            nn.Linear(32, 5),
         )
         return model
     
@@ -159,29 +159,55 @@ class FXAgt:
 
     def select_action(self, state, position):
         # position 
-        #  LONG  0
-        #  NOT   1
-        #  SHORT 2
+        # NO_POSITION = 0
+        # LONG        = 1
+        # HOLD_LONG   = 2
+        # SHORT       = 3
+        # HOLD_SHORT  = 4
         if position == 0:
-            if self.epsilon < np.random.rand():
+            if self.epsilon <= np.random.rand():
+                q = self.model.get_Q(state)
+                q[0][2] = -1e5
+                q[0][4] = -1e5
+                action = np.argmax(q)
+            else:
+                action = np.random.choice([0, 1, 3])
+        elif position == 1:
+            if self.epsilon <= np.random.rand():
                 q = self.model.get_Q(state)
                 q[0][0] = -1e5
+                q[0][1] = -1e5
+                q[0][4] = -1e5
                 action = np.argmax(q)
             else:
-                action = np.random.choice([1, 2])
-        elif position == 1:
-            if self.epsilon < np.random.rand():
-                q = self.model.get_Q(state)
-                action = np.argmax(q)
-            else:
-                action = np.random.choice([0, 1, 2])
+                action = np.random.choice([2, 3])
         elif position == 2:
-            if self.epsilon < np.random.rand():
+            if self.epsilon <= np.random.rand():
                 q = self.model.get_Q(state)
+                q[0][0] = -1e5
+                q[0][1] = -1e5
+                q[0][4] = -1e5
+                action = np.argmax(q)
+            else:
+                action = np.random.choice([2, 3])
+        elif position == 3:
+            if self.epsilon <= np.random.rand():
+                q = self.model.get_Q(state)
+                q[0][0] = -1e5
+                q[0][3] = -1e5
                 q[0][2] = -1e5
                 action = np.argmax(q)
             else:
-                action = np.random.choice([0, 1])
+                action = np.random.choice([1, 4])
+        elif position == 4:
+            if self.epsilon <= np.random.rand():
+                q = self.model.get_Q(state)
+                q[0][0] = -1e5
+                q[0][3] = -1e5
+                q[0][2] = -1e5
+                action = np.argmax(q)
+            else:
+                action = np.random.choice([1, 4])
         else:
             raise Exception("Error: wrong position_status at select_action")
 

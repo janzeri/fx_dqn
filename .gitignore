@@ -5,6 +5,7 @@ drafts.md
 todo.md
 
 src/run_trade.py
+src/back_test.py
 
 
 # Byte-compiled / optimized / DLL files
